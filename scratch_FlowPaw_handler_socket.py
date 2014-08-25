@@ -20,6 +20,14 @@ BUFFER_SIZE = 240
 SOCKET_TIMEOUT = 1
 packet_len=64
 
+def pack_request(*arguments):
+	packet = [0x0] * packet_len
+	i = 0
+	for arg in arguments:
+		packet[i] = arg
+		i += 1
+	return ''.join([chr(c) for c in packet])
+
 #hex data for leds
 led1=pack_request(0x23,0x4c,0x01)
 led2=pack_request(0x23,0x4c,0x02)
@@ -52,13 +60,6 @@ zero=pack_request(0x23,0x43,0x02,0x03,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x
 
 scrat = scratch.Scratch()
 
-def pack_request(*arguments):
-	packet = [0x0] * packet_len
-	i = 0
-	for arg in arguments:
-		packet[i] = arg
-		i += 1
-	return ''.join([chr(c) for c in packet])
 
 #allocate the name 'FlowPaw' to the USB device
 FlowPaw=usb.core.find(idVendor=0x1234,idProduct=0x0001)
@@ -74,16 +75,17 @@ except:
 	True
 
 FlowPaw.set_configuration(1)
+piMode = pack_request(0x23, 0x50)       #only send when sent to
 
 #Setup Pi Mode
-FlowPaw.write(1,piMode,0) #set FlowPaw into Pi Mode
-test=FlowPaw.read(0x81,64)
+#FlowPaw.write(1,piMode,0) #set FlowPaw into Pi Mode
+#test=FlowPaw.read(0x81,64)
 #Setup Claws
-FlowPaw.write(1,setup8x8,0) #8x8 on Claw2
-test=FlowPaw.read(0x81,64)
+#FlowPaw.write(1,setup8x8,0) #8x8 on Claw2
+#test=FlowPaw.read(0x81,64)
 
-FlowPaw.write(1,setupBuz,0)#Buzzer on Claw 4
-test=FlowPaw.read(0x81,64)
+#FlowPaw.write(1,setupBuz,0)#Buzzer on Claw 4
+#test=FlowPaw.read(0x81,64)
 
 #LED lights off
 def LEDsOff():
@@ -106,7 +108,7 @@ def LightMatrix():
     #start the movement
 	FlowPaw.write(1,paw,0) #Scroll text
 	test=FlowPaw.read(0x81,64)
-	LedsOn()
+	LEDsOn()
 
 #Procedure to play Tune
 def PlayTune():
@@ -153,6 +155,16 @@ class ScratchListener(threading.Thread):
     def run(self):
         global cycle_trace
         #This is main listening routine
+
+        FlowPaw.write(1,piMode,0) #set FlowPaw into Pi Mode
+        test=FlowPaw.read(0x81,64)
+        #Setup Claws
+        FlowPaw.write(1,setup8x8,0) #8x8 on Claw2
+        test=FlowPaw.read(0x81,64)
+
+        FlowPaw.write(1,setupBuz,0)#Buzzer on Claw 4
+        test=FlowPaw.read(0x81,64)
+        
         while not self.stopped():
           try:
 
@@ -187,10 +199,10 @@ class ScratchListener(threading.Thread):
                LightMatrix()
 
           if 'stop handler' in msgtype:
-               cycle_trace = 'disconnected'
-               break
-                #cleanup_threads((listener, sender))
-                #sys.exit()
+                cycle_trace = 'disconnected'
+                break
+                cleanup_threads((listener, sender))
+                sys.exit()
 
 
 def create_socket(host, port):
@@ -233,7 +245,7 @@ while True:
 
     if (cycle_trace == 'start'):
         # open the socket
-        print('Starting to connect...', end=' ')
+        print('Starting to connect...')
         the_socket = create_socket(host, PORT)
         print('Connected!')
         the_socket.settimeout(SOCKET_TIMEOUT)
