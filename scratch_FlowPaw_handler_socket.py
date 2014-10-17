@@ -66,7 +66,7 @@ FlowPaw=usb.core.find(idVendor=0x1234,idProduct=0x0001)
 
 #Check to see if Paw is detected
 if FlowPaw is None:
-     raise ValueError("Arm not found")
+     raise ValueError("Paw not found")
 
 try:
 	FlowPaw.detach_kernel_driver(0)
